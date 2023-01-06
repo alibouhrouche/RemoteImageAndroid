@@ -1,5 +1,9 @@
 package com.example.remoteimage;
 
+import static androidx.appcompat.content.res.AppCompatResources.getDrawable;
+
+import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,11 +34,15 @@ public class SecondFragment extends Fragment {
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        Context c = getContext();
+        Drawable broken = null;
+        if(c != null)
+            broken = getDrawable(getContext(),R.drawable.broken);
         Bundle bundle = this.getArguments();
         if (bundle != null) {
             String url = bundle.getString("url", "");
             binding.textviewSecond.setText(url);
-            RemoteImage r = new RemoteImage(binding.progress,binding.imageView);
+            RemoteImage r = new RemoteImage(binding.progress,binding.imageView,broken);
             r.execute(url);
         }
         binding.buttonSecond.setOnClickListener(new View.OnClickListener() {

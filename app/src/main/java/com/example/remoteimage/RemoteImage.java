@@ -8,6 +8,7 @@ import android.widget.ProgressBar;
 import android.os.PowerManager;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -21,12 +22,14 @@ import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-public class RemoteImage extends AsyncTask<String, Integer, Drawable> {
+public class RemoteImage extends MyAsyncTask<String, Integer, Drawable> {
     WeakReference<ProgressBar> progressBarWeakReference;
     WeakReference<ImageView> imageViewWeakReference;
-    public RemoteImage(ProgressBar b, ImageView img){
+    Drawable broken;
+    public RemoteImage(ProgressBar b, ImageView img,Drawable broken){
         progressBarWeakReference = new WeakReference<>(b);
         imageViewWeakReference = new WeakReference<>(img);
+        this.broken = broken;
     }
 
     @Override
@@ -49,6 +52,10 @@ public class RemoteImage extends AsyncTask<String, Integer, Drawable> {
 
             // download the file
             input = connection.getInputStream();
+            if(fileLength == -1){
+                publishProgress(-1);
+                return Drawable.createFromStream(input, url.getFile());
+            }
             ProcessInputStream p = new ProcessInputStream(input, fileLength);
             p.addListener(percent -> {
                 double d= percent * 100;
@@ -68,6 +75,8 @@ public class RemoteImage extends AsyncTask<String, Integer, Drawable> {
         ImageView img = imageViewWeakReference.get();
         if(bar != null && img != null){
             bar.setProgress(0);
+            bar.setIndeterminate(false);
+            img.setScaleType(ImageView.ScaleType.FIT_CENTER);
             img.setVisibility(View.INVISIBLE);
             bar.setVisibility(View.VISIBLE);
         }
@@ -79,6 +88,13 @@ public class RemoteImage extends AsyncTask<String, Integer, Drawable> {
         ProgressBar bar = progressBarWeakReference.get();
         ImageView img = imageViewWeakReference.get();
         if(bar != null && img != null){
+            if(drawable == null){
+                Snackbar.make(img,"Can't load image",Snackbar.LENGTH_LONG).show();
+                img.setScaleType(ImageView.ScaleType.CENTER);
+                drawable = broken;
+                if(broken == null)
+                    return;
+            }
             try{
                 Glide.with(img.getContext()).load(drawable).into(img);
                 img.setVisibility(View.VISIBLE);
@@ -94,7 +110,10 @@ public class RemoteImage extends AsyncTask<String, Integer, Drawable> {
         super.onProgressUpdate(values);
         ProgressBar bar = progressBarWeakReference.get();
         if(bar != null){
-            bar.setProgress(values[0]);
+            if(values[0] == -1)
+                bar.setIndeterminate(true);
+            else
+                bar.setProgress(values[0]);
         }
     }
 }
